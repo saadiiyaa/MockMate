@@ -1,0 +1,4 @@
+com\mockmate\controller\QuestionController.class
+com\mockmate\model\Question.class
+com\mockmate\MockMateApplication.class
+com\mockmate\repository\QuestionRepository.class

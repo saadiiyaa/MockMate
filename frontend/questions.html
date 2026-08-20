@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockMate | Interview</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<nav>
+    <b>MockMate</b>
+    <a href="index.html">Exit Interview</a>
+</nav>
+
+<main>
+    <section class="interview-section">
+
+        <div class="interview-header">
+
+            <div>
+                <span class="setup-label">MOCK INTERVIEW</span>
+
+                <h1 id="roleTitle">
+                    Java Developer
+                </h1>
+
+                <p id="difficultyText">
+                    Intermediate · Technical Round
+                </p>
+            </div>
+
+            <div class="timer" id="timer">
+                10:00
+            </div>
+
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="question-card">
+
+            <div class="question-meta">
+
+                <span id="questionNumber">
+                    Question 1
+                </span>
+
+                <span id="category">
+                    Loading...
+                </span>
+
+            </div>
+
+            <h2 id="questionText">
+                Loading question...
+            </h2>
+
+            <textarea
+                id="answer"
+                placeholder="Type your answer here..."
+                rows="8"></textarea>
+
+            <div class="interview-actions">
+
+                <button
+                    class="secondary"
+                    id="previousButton"
+                    onclick="previousQuestion()">
+                    ← Previous
+                </button>
+
+                <button
+                    class="primary"
+                    id="nextButton"
+                    onclick="nextQuestion()">
+                    Next →
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+</main>
+
+
+<script>
+
+let questions = [];
+let currentQuestion = 0;
+let answers = [];
+let timeLeft = 600;
+
+const role =
+    localStorage.getItem("mockmateRole") || "Java Developer";
+
+const difficulty =
+    localStorage.getItem("mockmateDifficulty") || "Beginner";
+
+const questionCount =
+    Number(localStorage.getItem("mockmateQuestionCount")) || 10;
+
+const sessionId =
+    Number(localStorage.getItem("mockmateSessionId"));
+
+
+document.getElementById("roleTitle").textContent = role;
+
+document.getElementById("difficultyText").textContent =
+    difficulty + " · Technical Round";
+
+
+async function loadQuestions() {
+
+    try {
+
+        const response = await fetch(
+            "http://localhost:8080/api/questions?role="
+            + encodeURIComponent(role)
+            + "&difficulty="
+            + encodeURIComponent(difficulty)
+        );
+
+        if (!response.ok) {
+            throw new Error("Unable to load questions");
+        }
+
+        const data = await response.json();
+
+        questions = data.slice(0, questionCount);
+
+        if (questions.length === 0) {
+
+            document.getElementById("questionText").textContent =
+                "No questions are available for this role and difficulty yet.";
+
+            document.getElementById("nextButton").disabled = true;
+
+            return;
+        }
+
+        answers = new Array(questions.length).fill("");
+
+        showQuestion();
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById("questionText").textContent =
+            "Unable to connect to MockMate server.";
+
+    }
+
+}
+
+
+function showQuestion() {
+
+    const question = questions[currentQuestion];
+
+    document.getElementById("questionNumber").textContent =
+        "Question "
+        + (currentQuestion + 1)
+        + " of "
+        + questions.length;
+
+    document.getElementById("category").textContent =
+        question.category;
+
+    document.getElementById("questionText").textContent =
+        question.text;
+
+    document.getElementById("answer").value =
+        answers[currentQuestion] || "";
+
+    const progress =
+        ((currentQuestion + 1) / questions.length) * 100;
+
+    document.getElementById("progressBar").style.width =
+        progress + "%";
+
+    document.getElementById("previousButton").disabled =
+        currentQuestion === 0;
+
+    if (currentQuestion === questions.length - 1) {
+
+        document.getElementById("nextButton").textContent =
+            "Finish Interview ✓";
+
+    } else {
+
+        document.getElementById("nextButton").textContent =
+            "Next →";
+
+    }
+
+}
+
+
+function saveAnswer() {
+
+    answers[currentQuestion] =
+        document.getElementById("answer").value;
+
+}
+
+
+async function nextQuestion() {
+
+    saveAnswer();
+
+    const answerText =
+        answers[currentQuestion];
+
+    if (!answerText.trim()) {
+
+        alert("Please enter an answer before continuing.");
+
+        return;
+    }
+
+    const question =
+        questions[currentQuestion];
+
+    if (!sessionId) {
+
+        alert("Interview session not found. Please start a new interview.");
+
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "http://localhost:8080/answers",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    questionId: question.id,
+                    interviewSessionId: sessionId,
+                    answerText: answerText
+                })
+            }
+        );
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Unable to submit answer. Server returned "
+                + response.status
+            );
+
+        }
+
+        const result =
+            await response.json();
+
+        console.log("Answer result:", result);
+
+
+        if (currentQuestion < questions.length - 1) {
+
+            currentQuestion++;
+
+            showQuestion();
+
+        } else {
+
+            finishInterview();
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("ERROR: " + error.message);
+
+    }
+
+}
+
+
+function previousQuestion() {
+
+    saveAnswer();
+
+    if (currentQuestion > 0) {
+
+        currentQuestion--;
+
+        showQuestion();
+
+    }
+
+}
+
+
+function finishInterview() {
+
+    localStorage.setItem(
+        "mockmateAnswers",
+        JSON.stringify(answers)
+    );
+
+    localStorage.setItem(
+        "mockmateQuestions",
+        JSON.stringify(questions)
+    );
+
+    window.location.href =
+        "results.html";
+
+}
+
+
+function startTimer() {
+
+    const timerElement =
+        document.getElementById("timer");
+
+    const timer =
+        setInterval(() => {
+
+            const minutes =
+                Math.floor(timeLeft / 60);
+
+            const seconds =
+                timeLeft % 60;
+
+            timerElement.textContent =
+                String(minutes).padStart(2, "0")
+                + ":"
+                + String(seconds).padStart(2, "0");
+
+            timeLeft--;
+
+            if (timeLeft < 0) {
+
+                clearInterval(timer);
+
+                finishInterview();
+
+            }
+
+        }, 1000);
+
+}
+
+
+loadQuestions();
+
+startTimer();
+
+</script>
+
+</body>
+</html>

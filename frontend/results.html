@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>MockMate | Results</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css">
+
+</head>
+
+
+<body>
+
+
+<nav>
+
+    <b>MockMate</b>
+
+    <a href="index.html">
+        Home
+    </a>
+
+    <a href="history.html">
+        History
+    </a>
+
+</nav>
+
+
+<main>
+
+    <section class="results-section">
+
+
+        <!-- =========================
+             OVERALL RESULT
+        ========================== -->
+
+        <div class="results-card">
+
+            <span class="setup-label">
+                INTERVIEW COMPLETE
+            </span>
+
+
+            <h1>
+                Here's your result.
+            </h1>
+
+
+            <div class="score-circle">
+
+                <span id="score">
+                    --%
+                </span>
+
+            </div>
+
+
+            <p id="resultMessage">
+                Loading your interview result...
+            </p>
+
+
+            <div class="result-stats">
+
+
+                <div>
+
+                    <strong id="totalQuestions">
+                        0
+                    </strong>
+
+                    <span>
+                        Questions
+                    </span>
+
+                </div>
+
+
+                <div>
+
+                    <strong id="attempted">
+                        0
+                    </strong>
+
+                    <span>
+                        Attempted
+                    </span>
+
+                </div>
+
+
+                <div>
+
+                    <strong id="skipped">
+                        0
+                    </strong>
+
+                    <span>
+                        Skipped
+                    </span>
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =========================
+             QUESTION REVIEW
+        ========================== -->
+
+        <div
+            id="questionResults"
+            class="question-results">
+
+        </div>
+
+
+        <!-- =========================
+             ACTION BUTTONS
+        ========================== -->
+
+        <div class="result-actions">
+
+
+            <button
+                class="primary"
+                onclick="restartInterview()">
+
+                Try Again →
+
+            </button>
+
+
+            <button
+                class="secondary"
+                onclick="goHistory()">
+
+                Interview History
+
+            </button>
+
+
+            <button
+                class="secondary"
+                onclick="goHome()">
+
+                Back to Home
+
+            </button>
+
+
+        </div>
+
+
+    </section>
+
+</main>
+
+
+<script>
+
+
+// =========================
+// GET SESSION ID
+// =========================
+
+const sessionId =
+    Number(
+        localStorage.getItem(
+            "mockmateSessionId"
+        )
+    );
+
+
+// =========================
+// LOAD RESULT
+// =========================
+
+async function loadResult() {
+
+    try {
+
+
+        if (!sessionId) {
+
+            throw new Error(
+                "Interview session not found."
+            );
+
+        }
+
+
+        // =========================
+        // FETCH RESULT
+        // =========================
+
+        const response =
+            await fetch(
+                "http://localhost:8080/interviews/"
+                + sessionId
+                + "/result"
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Unable to load interview result."
+            );
+
+        }
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Interview result:",
+            result
+        );
+
+
+        // =========================
+        // OVERALL SCORE
+        // =========================
+
+        const score =
+            Math.round(
+                Number(result.averageScore) || 0
+            );
+
+
+        document.getElementById(
+            "score"
+        ).textContent =
+            score + "%";
+
+
+        document.getElementById(
+            "totalQuestions"
+        ).textContent =
+            result.totalQuestionsAnswered;
+
+
+        document.getElementById(
+            "attempted"
+        ).textContent =
+            result.totalQuestionsAnswered;
+
+
+        document.getElementById(
+            "skipped"
+        ).textContent =
+            0;
+
+
+        // =========================
+        // RESULT MESSAGE
+        // =========================
+
+        if (score >= 80) {
+
+            document.getElementById(
+                "resultMessage"
+            ).textContent =
+                "Excellent performance! You're showing strong interview readiness.";
+
+        }
+
+        else if (score >= 60) {
+
+            document.getElementById(
+                "resultMessage"
+            ).textContent =
+                "Good attempt! Keep practicing to improve your confidence.";
+
+        }
+
+        else {
+
+            document.getElementById(
+                "resultMessage"
+            ).textContent =
+                "Keep practicing. Every interview is an opportunity to improve.";
+
+        }
+
+
+        // =========================
+        // QUESTION RESULTS
+        // =========================
+
+        const container =
+            document.getElementById(
+                "questionResults"
+            );
+
+
+        // Clear existing content
+
+        container.innerHTML = "";
+
+
+        // Make sure results exist
+
+        if (
+            !result.results ||
+            result.results.length === 0
+        ) {
+
+            container.innerHTML = `
+                
+                <div class="question-result-card">
+
+                    <h2>
+                        No question results available.
+                    </h2>
+
+                    <p>
+                        This interview does not contain
+                        any submitted answers.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+        }
+
+
+        // =========================
+        // CREATE EACH QUESTION CARD
+        // =========================
+
+        result.results.forEach(
+            (item, index) => {
+
+
+                const questionScore =
+                    Number(item.score) || 0;
+
+
+                // =========================
+                // DETERMINE STATUS
+                // =========================
+
+                let status =
+                    "Needs Improvement";
+
+
+                let statusClass =
+                    "result-wrong";
+
+
+                if (questionScore >= 80) {
+
+                    status =
+                        "Strong Answer";
+
+                    statusClass =
+                        "result-correct";
+
+                }
+
+                else if (questionScore >= 50) {
+
+                    status =
+                        "Partially Correct";
+
+                    statusClass =
+                        "result-partial";
+
+                }
+
+
+                // =========================
+                // CREATE CARD
+                // =========================
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "question-result-card";
+
+
+                // =========================
+                // CARD CONTENT
+                // =========================
+
+                card.innerHTML = `
+
+                    <div class="question-result-header">
+
+                        <span class="question-result-number">
+
+                            Question ${index + 1}
+
+                        </span>
+
+
+                        <span class="${statusClass}">
+
+                            ${status}
+
+                        </span>
+
+                    </div>
+
+
+                    <h2>
+
+                        ${item.question}
+
+                    </h2>
+
+
+                    <div class="your-answer">
+
+                        <span>
+
+                            YOUR ANSWER
+
+                        </span>
+
+
+                        <p>
+
+                            ${
+                                item.answer ||
+                                "No answer provided."
+                            }
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="question-score">
+
+                        <strong>
+
+                            ${questionScore}%
+
+                        </strong>
+
+
+                        <span>
+
+                            Answer Score
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="evaluation-feedback">
+
+                        <span>
+
+                            FEEDBACK
+
+                        </span>
+
+
+                        <p>
+
+                            ${
+                                item.feedback ||
+                                "No feedback available for this answer."
+                            }
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="keyword-results">
+
+
+                        <div class="matched-keywords">
+
+                            <span>
+
+                                MATCHED KEYWORDS
+
+                            </span>
+
+
+                            <p>
+
+                                ${
+                                    item.matchedKeywords ||
+                                    "None"
+                                }
+
+                            </p>
+
+                        </div>
+
+
+                        <div class="missing-keywords">
+
+                            <span>
+
+                                MISSING KEYWORDS
+
+                            </span>
+
+
+                            <p>
+
+                                ${
+                                    item.missingKeywords ||
+                                    "None"
+                                }
+
+                            </p>
+
+                        </div>
+
+
+                    </div>
+
+                `;
+
+
+                // =========================
+                // THIS WAS MISSING
+                // =========================
+
+                container.appendChild(
+                    card
+                );
+
+
+            }
+        );
+
+
+    }
+
+    catch (error) {
+
+
+        console.error(
+            "Result error:",
+            error
+        );
+
+
+        document.getElementById(
+            "resultMessage"
+        ).textContent =
+            "Unable to load your interview result.";
+
+    }
+
+}
+
+
+// =========================
+// BUTTON FUNCTIONS
+// =========================
+
+function restartInterview() {
+
+    window.location.href =
+        "interview.html";
+
+}
+
+
+function goHistory() {
+
+    window.location.href =
+        "history.html";
+
+}
+
+
+function goHome() {
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+// =========================
+// START
+// =========================
+
+loadResult();
+
+
+</script>
+
+
+</body>
+
+</html>

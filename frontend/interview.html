@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockMate | Interview Setup</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<nav>
+    <b>MockMate</b>
+    <a href="index.html">Home</a>
+</nav>
+
+<main>
+    <section class="setup-section">
+
+        <div class="setup-card">
+
+            <span class="setup-label">INTERVIEW SETUP</span>
+
+            <h1>Customize your<br><em>mock interview.</em></h1>
+
+            <p class="setup-description">
+                Choose your role, difficulty and number of questions.
+                MockMate will generate your interview from your preferences.
+            </p>
+
+            <div class="form-group">
+                <label for="role">Select Role</label>
+
+                <select id="role">
+                    <option value="Java Developer">Java Developer</option>
+                    <option value="Software Engineer">Software Engineer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="difficulty">Difficulty</label>
+
+                <select id="difficulty">
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate" selected>Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Number of Questions</label>
+
+                <div class="question-options">
+
+                    <button type="button" class="question-option" data-number="5">
+                        5
+                    </button>
+
+                    <button type="button" class="question-option active" data-number="10">
+                        10
+                    </button>
+
+                    <button type="button" class="question-option" data-number="15">
+                        15
+                    </button>
+
+                </div>
+            </div>
+
+            <button class="primary start-button" onclick="startInterview()">
+                Start Interview →
+            </button>
+
+        </div>
+
+    </section>
+</main>
+
+<script>
+
+let selectedQuestions = 10;
+
+document.querySelectorAll(".question-option").forEach(button => {
+
+    button.addEventListener("click", function () {
+
+        document
+            .querySelectorAll(".question-option")
+            .forEach(btn => btn.classList.remove("active"));
+
+        this.classList.add("active");
+
+        selectedQuestions = Number(this.dataset.number);
+
+    });
+
+});
+
+
+async function startInterview() {
+
+    
+
+    const role = document.getElementById("role").value;
+    const difficulty = document.getElementById("difficulty").value;
+
+    try {
+
+        const response = await fetch("http://localhost:8080/interviews", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                role: role,
+                difficulty: difficulty
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("Unable to create interview session");
+        }
+
+        const session = await response.json();
+
+        localStorage.setItem("mockmateRole", role);
+        localStorage.setItem("mockmateDifficulty", difficulty);
+        localStorage.setItem("mockmateQuestionCount", selectedQuestions);
+        localStorage.setItem("mockmateSessionId", session.id);
+
+        window.location.href = "questions.html";
+
+    } catch (error) {
+
+        alert("ERROR: " + error.message);
+
+    }
+
+}
+
+</script>
+
+</body>
+</html>

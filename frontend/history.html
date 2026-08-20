@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>MockMate | Interview History</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<nav>
+    <b>MockMate</b>
+
+    <a href="index.html">
+        Home
+    </a>
+
+    <a href="interview.html">
+        New Interview
+    </a>
+</nav>
+
+
+<main>
+
+    <section class="history-section">
+
+        <div class="history-header">
+
+            <div>
+
+                <span class="setup-label">
+                    YOUR PROGRESS
+                </span>
+
+                <h1>
+                    Interview History
+                </h1>
+
+                <p>
+                    Review your previous mock interviews and track your performance.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div id="historyContainer">
+
+            <p class="history-loading">
+                Loading interview history...
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script>
+
+async function loadHistory() {
+
+    const container =
+        document.getElementById("historyContainer");
+
+    try {
+
+        const response =
+            await fetch(
+                "http://localhost:8080/interviews/history"
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Unable to load interview history."
+            );
+
+        }
+
+
+        const history =
+            await response.json();
+
+
+        if (history.length === 0) {
+
+            container.innerHTML = `
+                <div class="history-empty">
+
+                    <h2>
+                        No interviews yet
+                    </h2>
+
+                    <p>
+                        Complete your first mock interview to see your progress here.
+                    </p>
+
+                    <button
+                        class="primary"
+                        onclick="startInterview()">
+
+                        Start Interview →
+
+                    </button>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        container.innerHTML = "";
+
+
+        history.reverse().forEach(interview => {
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "history-card";
+
+
+            const score =
+                Number(interview.score) || 0;
+
+
+            let scoreClass = "low";
+
+
+            if (score >= 80) {
+
+                scoreClass = "excellent";
+
+            } else if (score >= 60) {
+
+                scoreClass = "good";
+
+            }
+
+
+            card.innerHTML = `
+
+                <div class="history-main">
+
+                    <div>
+
+                        <span class="history-label">
+                            INTERVIEW #${interview.interviewSessionId}
+                        </span>
+
+                        <h2>
+                            ${interview.role}
+                        </h2>
+
+                        <p>
+                            ${interview.difficulty}
+                            ·
+                            ${interview.questionsAnswered}
+                            questions answered
+                        </p>
+
+                    </div>
+
+
+                    <div class="history-score ${scoreClass}">
+
+                        <strong>
+                            ${score}%
+                        </strong>
+
+                        <span>
+                            Score
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="history-footer">
+
+                    <span>
+                        ${interview.completed
+                            ? "✓ Interview Completed"
+                            : "Interview In Progress"}
+                    </span>
+
+
+                    <button
+                        class="secondary"
+                        onclick="viewResult(${interview.interviewSessionId})">
+
+                        View Result →
+
+                    </button>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(card);
+
+        });
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        container.innerHTML = `
+
+            <div class="history-empty">
+
+                <h2>
+                    Unable to load history
+                </h2>
+
+                <p>
+                    Make sure the MockMate server is running.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+function startInterview() {
+
+    window.location.href =
+        "interview.html";
+
+}
+
+
+function viewResult(sessionId) {
+
+    localStorage.setItem(
+        "mockmateSessionId",
+        sessionId
+    );
+
+    window.location.href =
+        "results.html";
+
+}
+
+
+loadHistory();
+
+</script>
+
+</body>
+
+</html>
