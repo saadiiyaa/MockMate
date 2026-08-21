@@ -120,7 +120,7 @@ async function loadQuestions() {
     try {
 
         const response = await fetch(
-            "http://localhost:8080/api/questions?role="
+            "/api/questions?role="
             + encodeURIComponent(role)
             + "&difficulty="
             + encodeURIComponent(difficulty)
@@ -238,7 +238,7 @@ async function nextQuestion() {
     try {
 
         const response = await fetch(
-            "http://localhost:8080/answers",
+            "/answers",
             {
                 method: "POST",
 
