@@ -106,7 +106,7 @@ async function startInterview() {
 
     try {
 
-        const response = await fetch("http://localhost:8080/interviews", {
+        const response = await fetch("/interviews", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
